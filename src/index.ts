@@ -24,13 +24,13 @@ const redis = createClient({
 	password: process.env.REDIS_PASSWORD,
 	username: "default",
 	socket: {
-		host: "redis-16065.c73.us-east-1-2.ec2.cloud.redislabs.com",
+		host: process.env.REDIS_PUBLIC_ENDPOINT,
 		port: parseInt(process.env.REDIS_PORT),
 	},
 });
 
 redis.connect().then(() => {
-	console.log(redis.isOpen);
+	console.log("REDIS IS CONNECTED");
 });
 
 const io = new socketIo.Server(server, {
@@ -39,15 +39,15 @@ const io = new socketIo.Server(server, {
 	},
 });
 
-app.get("/keys", async () => {
-	const keys = await redis.keys("*");
-	console.log(keys);
-});
+// app.get("/keys", async () => {
+// 	const keys = await redis.keys("*");
+// 	console.log(keys);
+// });
 
-app.get("/flus", async () => {
-	const keys = await redis.flushAll();
-	console.log(keys);
-});
+// app.get("/flus", async () => {
+// 	const keys = await redis.flushAll();
+// 	console.log(keys);
+// });
 
 app.get("/:roomId", async (req: Request, res: Response) => {
 	const roomId = req.params.roomId as any;
@@ -98,6 +98,7 @@ app.post("/create-session", async (req: Request, res: Response) => {
 		res.json({ error: error.message });
 	}
 });
+
 app.post("/join-session", async (req: Request, res: Response) => {
 	try {
 		const roomId = req.body.roomId;
@@ -123,10 +124,10 @@ io.on("connection", (socket) => {
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
 		const userInRoom = user.getUserInRoom(roomId);
 
-		console.log(userInRoom, "-----------after after");
-
-		if (userInRoom.length === 2)
+		if (userInRoom.length === 2) {
 			io.in(roomId).emit("both-player-joined", userInRoom);
+			socket.to(roomId).emit("make-offer", socket.id);
+		}
 	});
 
 	socket.on("new-pos", async (virtualChessObj, roomId) => {
@@ -159,20 +160,20 @@ io.on("connection", (socket) => {
 		io.to(to).emit("negotiation-done-from-server", socket.id, ans);
 	});
 
+	socket.on("call-cut", (to) => {
+		io.to(to).emit("cut-call-remote");
+	});
+
+	socket.on("call-accepted", (to) => {
+		io.to(to).emit("call-accepted-remote");
+	});
+
 	socket.on("disconnect", function () {
 		const userObj = user.getRoom(socket.id);
 		if (userObj) {
-			console.log(userObj, "------before");
-
 			user.removeUser(socket.id);
-
-			console.log(user.getRoom(socket.id), "------------after");
-
 			redis.expire(userObj.roomId, 60 * 5);
+			socket.to(userObj.roomId).emit("user-disconnected", userObj);
 		}
 	});
-});
-
-server.listen(3001, () => {
-	console.log("SERVER IS LISTING ON PORT 3001");
 });

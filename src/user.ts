@@ -28,7 +28,7 @@ class Users {
 	getOpponent = (roomId: string, socketId: string) =>
 		this.users.filter(
 			(user) => user.roomId === roomId && user.socketId != socketId
-		);
+		)[0];
 }
 
 export default new Users();
