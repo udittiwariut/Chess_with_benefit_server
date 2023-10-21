@@ -126,6 +126,7 @@ app.post("/join-session", async (req: Request, res: Response) => {
 });
 io.on("connection", (socket) => {
 	socket.on("join-room", (roomId, name, piece) => {
+		socket.setMaxListeners(100);
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
 		const userInRoom = user.getUserInRoom(roomId);
@@ -180,6 +181,7 @@ io.on("connection", (socket) => {
 			user.removeUser(socket.id);
 			redis.expire(userObj.roomId, 60 * 5);
 			socket.to(userObj.roomId).emit("user-disconnected", userObj);
+			socket.removeAllListeners();
 		}
 	});
 });
