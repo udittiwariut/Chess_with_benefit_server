@@ -127,9 +127,12 @@ app.post("/join-session", async (req: Request, res: Response) => {
 io.on("connection", (socket) => {
 	socket.on("join-room", (roomId, name, piece) => {
 		socket.setMaxListeners(100);
+
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
 		const userInRoom = user.getUserInRoom(roomId);
+
+		console.log(userInRoom);
 
 		if (userInRoom.length === 2) {
 			io.in(roomId).emit("both-player-joined", userInRoom);
