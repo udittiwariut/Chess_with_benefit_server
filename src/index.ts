@@ -181,3 +181,8 @@ io.on("connection", (socket) => {
 		}
 	});
 });
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+	console.log("SERVER IS LISTENING ON PORT" + process.env.PORT);
+});
