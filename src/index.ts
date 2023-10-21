@@ -49,6 +49,10 @@ const io = new socketIo.Server(server, {
 // 	console.log(keys);
 // });
 
+app.get("/server-health", async (req: Request, res: Response) => {
+	res.status(200);
+});
+
 app.get("/:roomId", async (req: Request, res: Response) => {
 	const roomId = req.params.roomId as any;
 	const player = req.query.player;
