@@ -39,6 +39,8 @@ const io = new socketIo.Server(server, {
 	},
 });
 
+io.setMaxListeners(100);
+
 // app.get("/keys", async () => {
 // 	const keys = await redis.keys("*");
 // 	console.log(keys);
@@ -124,8 +126,10 @@ app.post("/join-session", async (req: Request, res: Response) => {
 		res.json({ error: error.message });
 	}
 });
+
 io.on("connection", (socket) => {
-	io.setMaxListeners(100);
+	console.log("connection");
+
 	socket.on("join-room", (roomId, name, piece) => {
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
@@ -183,12 +187,12 @@ io.on("connection", (socket) => {
 			user.removeUser(socket.id);
 			redis.expire(userObj.roomId, 60 * 5);
 			socket.to(userObj.roomId).emit("user-disconnected", userObj);
-			socket.removeAllListeners();
 		}
 	});
 });
 
 const PORT = process.env.PORT || 3001;
+
 app.listen(PORT, () => {
 	console.log("SERVER IS LISTENING ON PORT" + " " + PORT);
 });
