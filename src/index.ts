@@ -125,9 +125,8 @@ app.post("/join-session", async (req: Request, res: Response) => {
 	}
 });
 io.on("connection", (socket) => {
+	io.setMaxListeners(100);
 	socket.on("join-room", (roomId, name, piece) => {
-		socket.setMaxListeners(100);
-
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
 		const userInRoom = user.getUserInRoom(roomId);
