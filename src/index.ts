@@ -37,7 +37,7 @@ const io = new socketIo.Server(server, {
 	cors: {
 		origin: "*",
 	},
-}).listen(10000);
+});
 
 // app.get("/keys", async () => {
 // 	const keys = await redis.keys("*");
