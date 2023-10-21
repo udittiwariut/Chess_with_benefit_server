@@ -50,7 +50,9 @@ const io = new socketIo.Server(server, {
 // });
 
 app.get("/server-health", async (req: Request, res: Response) => {
-	return res.status(200);
+	return res.status(200).json({
+		status: "ok",
+	});
 });
 
 app.get("/:roomId", async (req: Request, res: Response) => {
