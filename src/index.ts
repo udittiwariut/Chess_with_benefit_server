@@ -183,6 +183,7 @@ io.on("connection", (socket) => {
 		if (userObj) {
 			user.removeUser(socket.id);
 			redis.expire(userObj.roomId, 60 * 5);
+			socket.removeAllListeners();
 			socket.to(userObj.roomId).emit("user-disconnected", userObj);
 		}
 	});
