@@ -37,9 +37,7 @@ const io = new socketIo.Server(server, {
 	cors: {
 		origin: "*",
 	},
-});
-
-io.setMaxListeners(100);
+}).listen(10000);
 
 // app.get("/keys", async () => {
 // 	const keys = await redis.keys("*");
@@ -128,8 +126,7 @@ app.post("/join-session", async (req: Request, res: Response) => {
 });
 
 io.on("connection", (socket) => {
-	console.log("connection");
-
+	socket.setMaxListeners(100);
 	socket.on("join-room", (roomId, name, piece) => {
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
