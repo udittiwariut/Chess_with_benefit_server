@@ -41,6 +41,11 @@ const io = new socket_io_1.default.Server(server, {
 // 	const keys = await redis.flushAll();
 // 	console.log(keys);
 // });
+app.get("/server-health", async (req, res) => {
+    return res.status(200).json({
+        status: "ok",
+    });
+});
 app.get("/:roomId", async (req, res) => {
     const roomId = req.params.roomId;
     const player = req.query.player;
@@ -103,10 +108,12 @@ app.post("/join-session", async (req, res) => {
     }
 });
 io.on("connection", (socket) => {
+    socket.setMaxListeners(100);
     socket.on("join-room", (roomId, name, piece) => {
         socket.join(roomId);
         user_1.default.addUser({ socketId: socket.id, userName: name, roomId, piece });
         const userInRoom = user_1.default.getUserInRoom(roomId);
+        console.log(userInRoom);
         if (userInRoom.length === 2) {
             io.in(roomId).emit("both-player-joined", userInRoom);
             socket.to(roomId).emit("make-offer", socket.id);
@@ -144,8 +151,13 @@ io.on("connection", (socket) => {
         if (userObj) {
             user_1.default.removeUser(socket.id);
             redis.expire(userObj.roomId, 60 * 5);
+            socket.removeAllListeners();
             socket.to(userObj.roomId).emit("user-disconnected", userObj);
         }
     });
+});
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+    console.log("SERVER IS LISTENING ON PORT" + " " + PORT);
 });
 //# sourceMappingURL=index.js.map

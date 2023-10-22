@@ -77,7 +77,7 @@ app.get("/:roomId", async (req: Request, res: Response) => {
 		return res.json(resObj);
 	}
 
-	const sessionObj: SessionObj = JSON.parse(session.toString());
+	const sessionObj: SessionObj = await JSON.parse(session.toString());
 
 	if (!sessionObj[player.toString()]) {
 		resObj.redirect = true;
