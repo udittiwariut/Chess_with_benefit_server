@@ -57,7 +57,7 @@ app.get("/server-health", async (req: Request, res: Response) => {
 
 app.get("/:roomId", async (req: Request, res: Response) => {
 	const roomId = req.params.roomId as any;
-	const player = req.query.player;
+	const player = req.query.player as string;
 
 	let resObj: SessionObj = {
 		session_expired: false,
@@ -77,14 +77,15 @@ app.get("/:roomId", async (req: Request, res: Response) => {
 		return res.json(resObj);
 	}
 
-	const sessionObj: SessionObj = await JSON.parse(session.toString());
+	const sessionObj = await JSON.parse(session.toString());
 
-	if (!sessionObj[player.toString()]) {
+	if (!sessionObj[player]) {
 		resObj.redirect = true;
 		return res.json(resObj);
 	}
 
-	resObj.state = sessionObj.state;
+	resObj.state = sessionObj;
+
 	return res.json(resObj);
 });
 app.post("/create-session", async (req: Request, res: Response) => {
@@ -131,8 +132,6 @@ io.on("connection", (socket) => {
 		socket.join(roomId);
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
 		const userInRoom = user.getUserInRoom(roomId);
-
-		console.log(userInRoom);
 
 		if (userInRoom.length === 2) {
 			io.in(roomId).emit("both-player-joined", userInRoom);

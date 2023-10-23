@@ -64,12 +64,12 @@ app.get("/:roomId", async (req, res) => {
         resObj.session_expired = true;
         return res.json(resObj);
     }
-    const sessionObj = JSON.parse(session.toString());
-    if (!sessionObj[player.toString()]) {
+    const sessionObj = await JSON.parse(session.toString());
+    if (!sessionObj[player]) {
         resObj.redirect = true;
         return res.json(resObj);
     }
-    resObj.state = sessionObj.state;
+    resObj.state = sessionObj;
     return res.json(resObj);
 });
 app.post("/create-session", async (req, res) => {
@@ -113,7 +113,6 @@ io.on("connection", (socket) => {
         socket.join(roomId);
         user_1.default.addUser({ socketId: socket.id, userName: name, roomId, piece });
         const userInRoom = user_1.default.getUserInRoom(roomId);
-        console.log(userInRoom);
         if (userInRoom.length === 2) {
             io.in(roomId).emit("both-player-joined", userInRoom);
             socket.to(roomId).emit("make-offer", socket.id);
