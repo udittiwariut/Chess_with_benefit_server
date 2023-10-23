@@ -2,6 +2,7 @@ import express, { Request, Response, ErrorRequestHandler } from "express";
 import http from "node:http";
 import socketIo from "socket.io";
 import cors from "cors";
+import virtualChessPos from "./initialBord";
 import { createClient } from "redis";
 import { SessionObj } from "./types/globalTypes";
 import dotenv from "dotenv";
@@ -9,9 +10,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import user from "./user";
-
-const MAX_NUM_OF_PLAYER = 2;
-const DEFAULT_EXPIRATION = 60 * 5;
 
 const app = express();
 app.use(express.json());
@@ -66,10 +64,9 @@ app.get("/:roomId", async (req: Request, res: Response) => {
 	};
 
 	const session = await redis.get(roomId).catch((err) => {
-		res.json({
+		return res.json({
 			error: err,
 		});
-		throw new Error(err);
 	});
 
 	if (session === null) {
@@ -93,9 +90,10 @@ app.post("/create-session", async (req: Request, res: Response) => {
 		const roomId = req.body.roomId;
 		const playerInfo = req.body.playerInfo;
 		const initialState = req.body.initialState;
+		initialState.currentPos = virtualChessPos();
 
 		redis
-			.set(roomId, JSON.stringify({ ...initialState, ...playerInfo }))
+			.setEx(roomId, 60 * 5, JSON.stringify({ ...initialState, ...playerInfo }))
 			.then(() => {
 				res.json({
 					status: true,
@@ -127,10 +125,13 @@ app.post("/join-session", async (req: Request, res: Response) => {
 });
 
 io.on("connection", (socket) => {
-	socket.setMaxListeners(100);
 	socket.on("join-room", (roomId, name, piece) => {
 		socket.join(roomId);
+
+		redis.persist(roomId);
+
 		user.addUser({ socketId: socket.id, userName: name, roomId, piece });
+
 		const userInRoom = user.getUserInRoom(roomId);
 
 		if (userInRoom.length === 2) {
@@ -143,10 +144,9 @@ io.on("connection", (socket) => {
 		socket.broadcast.to(roomId).emit("updated-pos", virtualChessObj);
 		const stateString = await redis.get(roomId);
 		const stateParsed = await JSON.parse(stateString);
-
 		redis.set(
 			roomId,
-			JSON.stringify({ ...stateParsed, state: virtualChessObj })
+			JSON.stringify({ ...virtualChessObj, w: stateParsed.w, b: stateParsed.b })
 		);
 	});
 

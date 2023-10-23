@@ -7,12 +7,11 @@ const express_1 = __importDefault(require("express"));
 const node_http_1 = __importDefault(require("node:http"));
 const socket_io_1 = __importDefault(require("socket.io"));
 const cors_1 = __importDefault(require("cors"));
+const initialBord_1 = __importDefault(require("./initialBord"));
 const redis_1 = require("redis");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const user_1 = __importDefault(require("./user"));
-const MAX_NUM_OF_PLAYER = 2;
-const DEFAULT_EXPIRATION = 60 * 5;
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
@@ -55,10 +54,9 @@ app.get("/:roomId", async (req, res) => {
         full: false,
     };
     const session = await redis.get(roomId).catch((err) => {
-        res.json({
+        return res.json({
             error: err,
         });
-        throw new Error(err);
     });
     if (session === null) {
         resObj.session_expired = true;
@@ -77,8 +75,9 @@ app.post("/create-session", async (req, res) => {
         const roomId = req.body.roomId;
         const playerInfo = req.body.playerInfo;
         const initialState = req.body.initialState;
+        initialState.currentPos = (0, initialBord_1.default)();
         redis
-            .set(roomId, JSON.stringify({ ...initialState, ...playerInfo }))
+            .setEx(roomId, 60 * 5, JSON.stringify({ ...initialState, ...playerInfo }))
             .then(() => {
             res.json({
                 status: true,
@@ -108,9 +107,9 @@ app.post("/join-session", async (req, res) => {
     }
 });
 io.on("connection", (socket) => {
-    socket.setMaxListeners(100);
     socket.on("join-room", (roomId, name, piece) => {
         socket.join(roomId);
+        redis.persist(roomId);
         user_1.default.addUser({ socketId: socket.id, userName: name, roomId, piece });
         const userInRoom = user_1.default.getUserInRoom(roomId);
         if (userInRoom.length === 2) {
@@ -122,7 +121,7 @@ io.on("connection", (socket) => {
         socket.broadcast.to(roomId).emit("updated-pos", virtualChessObj);
         const stateString = await redis.get(roomId);
         const stateParsed = await JSON.parse(stateString);
-        redis.set(roomId, JSON.stringify({ ...stateParsed, state: virtualChessObj }));
+        redis.set(roomId, JSON.stringify({ ...virtualChessObj, w: stateParsed.w, b: stateParsed.b }));
     });
     socket.on("send-offer-from-client", (to, offer) => {
         io.to(to).emit("send-offer-from-server", socket.id, offer);
