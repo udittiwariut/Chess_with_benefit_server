@@ -16,14 +16,7 @@ const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
 const server = new node_http_1.default.Server(app);
-const redis = (0, redis_1.createClient)({
-    password: process.env.REDIS_PASSWORD,
-    username: "default",
-    socket: {
-        host: process.env.REDIS_PUBLIC_ENDPOINT,
-        port: parseInt(process.env.REDIS_PORT),
-    },
-});
+const redis = (0, redis_1.createClient)({ url: "redis://redis:6379" });
 redis.connect().then(() => {
     console.log("REDIS IS CONNECTED");
 });

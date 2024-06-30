@@ -1,4 +1,4 @@
-import express, { Request, Response, ErrorRequestHandler } from "express";
+import express, { Request, Response } from "express";
 import http from "node:http";
 import socketIo from "socket.io";
 import cors from "cors";
@@ -18,14 +18,7 @@ app.use(cors());
 
 const server = new http.Server(app);
 
-const redis = createClient({
-	password: process.env.REDIS_PASSWORD,
-	username: "default",
-	socket: {
-		host: process.env.REDIS_PUBLIC_ENDPOINT,
-		port: parseInt(process.env.REDIS_PORT),
-	},
-});
+const redis = createClient({ url: "redis://redis:6379" });
 
 redis.connect().then(() => {
 	console.log("REDIS IS CONNECTED");
@@ -49,7 +42,7 @@ const io = new socketIo.Server(server, {
 
 app.get("/server-health", async (req: Request, res: Response) => {
 	return res.status(200).json({
-		status: "ok",
+		status: "okAY",
 	});
 });
 
